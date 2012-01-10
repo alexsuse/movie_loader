@@ -1,6 +1,14 @@
 import numpy as np
 from PIL import Image
 import os
+import string
+
+def load_movies_from_url_file(fi,xy=None,duration=120):
+	command = "python youtube.py -A -a "+fi
+	os.system(command)
+	os.system('mkdir videos; mv 00*flv videos')
+	return load_from_path_and_cut_frames('./videos/',['.avi','.flv'],xy,duration)
+		
 
 def load_from_movie(movieIds, xy = None, duration = 120):
 	allImg = []
@@ -35,10 +43,13 @@ def load_from_movie(movieIds, xy = None, duration = 120):
 def load_and_cut_frames(movieIds, xy=None, duration = 120):
 	"""loads movies from filenames and cuts frames out"""
 	data = load_from_movie(movieIds,xy,duration)
-	frames = cut_frames(data)
-	return frames
+	return cut_frames(data)
 
-def load_movies_from_path(path,extensions=['.avi'],xy=None):
+def load_from_path_and_cut_frames(path,extensions=['.avi'],xy=None,duration=120):
+	data = load_movies_from_path(path,extensions,xy,duration)
+	return cut_frames(data)
+
+def load_movies_from_path(path,extensions=['.avi'],xy=None,duration = 120):
 	"""loads all movies from a folder with given extensions"""
 	ls = os.listdir(path)
 	movies_to_load = []
@@ -47,9 +58,9 @@ def load_movies_from_path(path,extensions=['.avi'],xy=None):
 			if ext in i:
 				movies_to_load.append(path+i)
 				break
-	return load_from_movie(movies_to_load,xy)
+	return load_from_movie(movies_to_load,xy,duration)
 
-def cut_frames(d):
+def cut_frames(d,minframes=100):
 	"""gets data loaded from movies in RGB and cuts frames longer than 4 seconds out"""
 	frames = []
 	for data in d:	
@@ -58,9 +69,9 @@ def cut_frames(d):
 		inds = np.where(diffs>thresh)[0]
 		st = 0
 		for i in inds:
-			if i-st > 100: #disregard too short frames
+			if i-st > minframes: #disregard too short frames
 				frames.append(data[:,:,st:i-1]) #add to list of frames
 			st = i
-		if len(data[0,0,:])- i>100:
+		if len(data[0,0,:])- i > minframes:
 			frames.append(data[:,:,i:])
 	return frames
