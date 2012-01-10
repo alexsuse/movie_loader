@@ -32,7 +32,14 @@ def load_from_movie(movieIds, xy = None, duration = 120):
 	allImg = np.array(allImg)
 	return allImg	
 
+def load_and_cut_frames(movieIds, xy=None, duration = 120):
+	"""loads movies from filenames and cuts frames out"""
+	data = load_from_movie(movieIds,xy,duration)
+	frames = cut_frames(data)
+	return frames
+
 def load_movies_from_path(path,extensions=['.avi'],xy=None):
+	"""loads all movies from a folder with given extensions"""
 	ls = os.listdir(path)
 	movies_to_load = []
 	for i in ls:
@@ -42,3 +49,18 @@ def load_movies_from_path(path,extensions=['.avi'],xy=None):
 				break
 	return load_from_movie(movies_to_load,xy)
 
+def cut_frames(d):
+	"""gets data loaded from movies in RGB and cuts frames longer than 4 seconds out"""
+	frames = []
+	for data in d:	
+		diffs = np.mean(np.mean(np.abs(np.diff(data,axis=2)),axis=0),axis=0).ravel()	
+		thresh = 0.5*(np.mean(diffs)+np.max(diffs))
+		inds = np.where(diffs>thresh)[0]
+		st = 0
+		for i in inds:
+			if i-st > 100: #disregard too short frames
+				frames.append(data[:,:,st:i-1]) #add to list of frames
+			st = i
+		if len(data[0,0,:])- i>100:
+			frames.append(data[:,:,i:])
+	return frames
